@@ -34,6 +34,7 @@ def setup_connection():
         This setup spark config with which nodes are slaves and which are master
     """
     master_ip = os.environ.get("AZTK_MASTER_IP")
+
     master_config_file = os.path.join(spark_conf_folder, "master")
     master_file = open(master_config_file, "w", encoding="UTF-8")
 
@@ -41,7 +42,6 @@ def setup_connection():
     master_file.write("{0}\n".format(master_ip))
 
     master_file.close()
-
 
 def wait_for_master():
     print("Waiting for master to be ready.")
@@ -75,7 +75,7 @@ def start_spark_master():
 def start_spark_worker():
     wait_for_master()
     exe = os.path.join(spark_home, "sbin", "start-slave.sh")
-    cmd = [exe, "spark://{0}:7077".os.environ.get("AZTK_MASTER_IP"), "--webui-port", str(config.spark_worker_ui_port)]
+    cmd = [exe, "spark://{0}:7077".format(os.environ.get("AZTK_MASTER_IP")), "--webui-port", str(config.spark_worker_ui_port)]
     print("Connecting to master with '{0}'".format(" ".join(cmd)))
     call(cmd)
 

@@ -29,7 +29,7 @@ def setup_host(docker_repo: str, docker_run_options: str):
     master_ip = ''
     def wait_and_get_master():
         while True:
-            if os.path.exists(cluster_info_file)
+            if os.path.exists(cluster_info_file):
                 with open(cluster_info_file) as fp:
                     line = fp.readline()
                     while line:
