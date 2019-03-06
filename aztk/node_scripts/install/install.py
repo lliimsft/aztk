@@ -2,16 +2,9 @@ import os
 
 from aztk.internal import cluster_data
 from aztk.models.plugins import PluginTarget
-from aztk.node_scripts.core import config
 from aztk.node_scripts.install import (plugins, spark, spark_container)
 import time
-
-def read_cluster_config():
-    data = cluster_data.ClusterData(config.blob_client, config.cluster_id)
-    cluster_config = data.read_cluster_config()
-    print("Got cluster config", cluster_config)
-    return cluster_config
-
+import os.path
 
 def setup_host(docker_repo: str, docker_run_options: str):
     """
@@ -36,19 +29,20 @@ def setup_host(docker_repo: str, docker_run_options: str):
     master_ip = ''
     def wait_and_get_master():
         while True:
-            with open(cluster_info_file) as fp:
-                line = fp.readline()
-                while line:
-                    parts = line.split(':')
-                    if len(parts) > 1 and parts[1].startswith('master'):
-                        return parts[0]
+            if os.path.exists(cluster_info_file)
+                with open(cluster_info_file) as fp:
                     line = fp.readline()
+                    while line:
+                        parts = line.split(':')
+                        if len(parts) > 1 and parts[1].startswith('master'):
+                            return parts[0]
+                        line = fp.readline()
             time.sleep(2)
 
     if is_master:
         import socket
         master_ip = socket.gethostbyname(socket.gethostname())
-        with open(cluster_info_file, 'a') as the_file:
+        with open(cluster_info_file, 'a+') as the_file:
             the_file.write(master_ip+':master\n')
     else:
         master_ip = wait_and_get_master()
@@ -60,9 +54,7 @@ def setup_host(docker_repo: str, docker_run_options: str):
         docker_repo=docker_repo,
         docker_run_options=docker_run_options,
         gpu_enabled=os.environ.get("AZTK_GPU_ENABLED") == "true",
-        plugins=cluster_conf.plugins,
     )
-    plugins.setup_plugins(target=PluginTarget.Host, is_master=is_master, is_worker=is_worker)
 
 
 def setup_spark_container():
@@ -84,7 +76,5 @@ def setup_spark_container():
 
     if is_worker:
         spark.start_spark_worker()
-
-    plugins.setup_plugins(target=PluginTarget.SparkContainer, is_master=is_master, is_worker=is_worker)
 
     open("/tmp/setup_complete", "a").close()

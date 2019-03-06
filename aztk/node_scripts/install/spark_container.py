@@ -54,6 +54,9 @@ def start_spark_container(docker_repo: str = None,
     cmd.pass_env("SPARK_SUBMIT_LOGS_FILE")
     cmd.pass_env("SPARK_JOB_UI_PORT")
 
+    cmd.pass_env("AZ_BATCHAI_SPARK_CLUSTER_INFO_FILE")
+    cmd.pass_env("AZ_BATCHAI_SPARK_MASTER")
+    
     cmd.open_port(8080)    # Spark Master UI
     cmd.open_port(7077)    # Spark Master
     cmd.open_port(7337)    # Spark Shuffle Service
