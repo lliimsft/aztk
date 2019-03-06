@@ -119,9 +119,9 @@ main () {
         echo $(hostname -I | awk '{print $1}') $HOSTNAME >> /etc/hosts
     fi
 
-    time(
-        install_docker_compose
-    ) 2>&1
+    # time(
+    #     install_docker_compose
+    # ) 2>&1
 
     time(
         pull_docker_container
