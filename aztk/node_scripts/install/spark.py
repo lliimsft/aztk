@@ -65,6 +65,9 @@ def start_spark_master():
     cluster_info_file = os.environ.get('AZ_BATCHAI_SPARK_CLUSTER_INFO_FILE')
     with open(cluster_info_file, 'a') as the_file:
         the_file.write('done\n')
+
+    cmd="/bin/bash /mnt/batch/tasks/startup/wd/aztk/node_scripts/spark_jupyter_setup.sh",
+    call(cmd)
     try:
         start_history_server()
     except Exception as e:
