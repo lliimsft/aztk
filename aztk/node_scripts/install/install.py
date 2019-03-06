@@ -2,7 +2,6 @@ import os
 
 from aztk.internal import cluster_data
 from aztk.models.plugins import PluginTarget
-from aztk.node_scripts import wait_until_master_selected
 from aztk.node_scripts.core import config
 from aztk.node_scripts.install import (plugins, spark, spark_container)
 import time
