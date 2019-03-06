@@ -66,7 +66,7 @@ def start_spark_master():
     with open(cluster_info_file, 'a') as the_file:
         the_file.write('done\n')
 
-    cmd="/bin/bash /mnt/batch/tasks/startup/wd/aztk/node_scripts/spark_jupyter_setup.sh",
+    cmd=["/bin/bash", "/mnt/batch/tasks/startup/wd/aztk/node_scripts/spark_jupyter_setup.sh"]
     call(cmd)
     try:
         start_history_server()
