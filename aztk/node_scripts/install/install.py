@@ -4,8 +4,8 @@ from aztk.internal import cluster_data
 from aztk.models.plugins import PluginTarget
 from aztk.node_scripts import wait_until_master_selected
 from aztk.node_scripts.core import config
-from aztk.node_scripts.install import (create_user, pick_master, plugins, spark, spark_container)
-
+from aztk.node_scripts.install import (plugins, spark, spark_container)
+import time
 
 def read_cluster_config():
     data = cluster_data.ClusterData(config.blob_client, config.cluster_id)
@@ -20,18 +20,8 @@ def setup_host(docker_repo: str, docker_run_options: str):
     :param docker_repo: location of the Docker image to use
     :param docker_run_options: additional command-line options to pass to docker run
     """
-    client = config.batch_client
-
-    create_user.create_user(batch_client=client)
-    if os.environ["AZ_BATCH_NODE_IS_DEDICATED"] == "true" or os.environ["AZTK_MIXED_MODE"] == "false":
-        is_master = pick_master.find_master(client)
-    else:
-        is_master = False
-        wait_until_master_selected.main()
-
-    is_worker = not is_master or os.environ.get("AZTK_WORKER_ON_MASTER") == "true"
-    master_node_id = pick_master.get_master_node_id(config.batch_client.pool.get(config.pool_id))
-    master_node = config.batch_client.compute_node.get(config.pool_id, master_node_id)
+    is_master = os.environ.get("AZ_BATCHAI_SPARK_MASTER") == "true"
+    is_worker = not is_master
 
     if is_master:
         os.environ["AZTK_IS_MASTER"] = "true"
@@ -42,9 +32,29 @@ def setup_host(docker_repo: str, docker_run_options: str):
     else:
         os.environ["AZTK_IS_WORKER"] = "false"
 
-    os.environ["AZTK_MASTER_IP"] = master_node.ip_address
 
-    cluster_conf = read_cluster_config()
+    cluster_info_file = os.environ.get('AZ_BATCHAI_SPARK_CLUSTER_INFO_FILE')
+    master_ip = ''
+    def wait_and_get_master():
+        while True:
+            with open(cluster_info_file) as fp:
+                line = fp.readline()
+                while line:
+                    parts = line.split(':')
+                    if len(parts) > 1 and parts[1].startswith('master'):
+                        return parts[0]
+                    line = fp.readline()
+            time.sleep(2)
+
+    if is_master:
+        import socket
+        master_ip = socket.gethostbyname(socket.gethostname())
+        with open(cluster_info_file, 'a') as the_file:
+            the_file.write(master_ip+':master\n')
+    else:
+        master_ip = wait_and_get_master()
+
+    os.environ["AZTK_MASTER_IP"] = master_ip
 
     # TODO pass azure file shares
     spark_container.start_spark_container(

@@ -25,18 +25,12 @@ install_prerequisites () {
         software-properties-common
         python3-pip
         python3-venv
-        docker-ce
     )
 
     echo "running apt-get install -y --no-install-recommends \"${packages[@]}\""
     apt-get -y update &&
     apt-get install -y --no-install-recommends "${packages[@]}"
 
-    if [ $AZTK_GPU_ENABLED == "true" ]; then
-        apt-get install -y nvidia-384 nvidia-modprobe
-        wget -P /tmp https://github.com/NVIDIA/nvidia-docker/releases/download/v1.0.1/nvidia-docker_1.0.1-1_amd64.deb
-        sudo dpkg -i /tmp/nvidia-docker*.deb && rm /tmp/nvidia-docker*.deb
-    fi
     echo "Finished installing pre-reqs"
 }
 

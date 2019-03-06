@@ -13,8 +13,6 @@ import azure.batch.models as batchmodels
 from aztk.node_scripts.core import config
 from aztk.node_scripts.install import pick_master
 
-batch_client = config.batch_client
-
 spark_home = "/home/spark-current"
 spark_conf_folder = os.path.join(spark_home, "conf")
 
@@ -31,62 +29,42 @@ def setup_as_worker():
     start_spark_worker()
 
 
-def get_pool() -> batchmodels.CloudPool:
-    return batch_client.pool.get(config.pool_id)
-
-
-def get_node(node_id: str) -> batchmodels.ComputeNode:
-    return batch_client.compute_node.get(config.pool_id, node_id)
-
-
-def list_nodes() -> List[batchmodels.ComputeNode]:
-    """
-        List all the nodes in the pool.
-    """
-    # TODO use continuation token & verify against current/target dedicated of
-    # pool
-    return batch_client.compute_node.list(config.pool_id)
-
-
 def setup_connection():
     """
         This setup spark config with which nodes are slaves and which are master
     """
-    master_node_id = pick_master.get_master_node_id(batch_client.pool.get(config.pool_id))
-    master_node = get_node(master_node_id)
-
+    master_ip = os.environ.get("AZTK_MASTER_IP")
     master_config_file = os.path.join(spark_conf_folder, "master")
     master_file = open(master_config_file, "w", encoding="UTF-8")
 
-    print("Adding master node ip {0} to config file '{1}'".format(master_node.ip_address, master_config_file))
-    master_file.write("{0}\n".format(master_node.ip_address))
+    print("Adding master node ip {0} to config file '{1}'".format(master_ip, master_config_file))
+    master_file.write("{0}\n".format(master_ip))
 
     master_file.close()
 
 
 def wait_for_master():
     print("Waiting for master to be ready.")
-    master_node_id = pick_master.get_master_node_id(batch_client.pool.get(config.pool_id))
-
-    if master_node_id == config.node_id:
-        return
-
+    cluster_info_file = os.environ.get('AZ_BATCHAI_SPARK_CLUSTER_INFO_FILE')
     while True:
-        master_node = get_node(master_node_id)
-
-        if master_node.state in [batchmodels.ComputeNodeState.idle, batchmodels.ComputeNodeState.running]:
-            break
-        else:
-            print("{0} Still waiting on master", datetime.datetime.now())
-            time.sleep(10)
+        with open(cluster_info_file) as fp:
+            line = fp.readline()
+            while line:
+                if line.startswith('done'):
+                    return
+                line = fp.readline()
+            time.sleep(5)
 
 
 def start_spark_master():
-    master_ip = get_node(config.node_id).ip_address
+    master_ip = os.environ.get("AZTK_MASTER_IP")
     exe = os.path.join(spark_home, "sbin", "start-master.sh")
     cmd = [exe, "-h", master_ip, "--webui-port", str(config.spark_web_ui_port)]
     print("Starting master with '{0}'".format(" ".join(cmd)))
     call(cmd)
+    cluster_info_file = os.environ.get('AZ_BATCHAI_SPARK_CLUSTER_INFO_FILE')
+    with open(cluster_info_file, 'a') as the_file:
+        the_file.write('done\n')
     try:
         start_history_server()
     except Exception as e:
@@ -97,10 +75,7 @@ def start_spark_master():
 def start_spark_worker():
     wait_for_master()
     exe = os.path.join(spark_home, "sbin", "start-slave.sh")
-    master_node_id = pick_master.get_master_node_id(batch_client.pool.get(config.pool_id))
-    master_node = get_node(master_node_id)
-
-    cmd = [exe, "spark://{0}:7077".format(master_node.ip_address), "--webui-port", str(config.spark_worker_ui_port)]
+    cmd = [exe, "spark://{0}:7077".os.environ.get("AZTK_MASTER_IP"), "--webui-port", str(config.spark_worker_ui_port)]
     print("Connecting to master with '{0}'".format(" ".join(cmd)))
     call(cmd)
 
