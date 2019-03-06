@@ -63,4 +63,4 @@ export KG_HTTP_PASS=guest-password
 export KG_REQUEST_TIMEOUT=30
 export KERNEL_USERNAME=${KG_HTTP_USER}
 cd /mnt
-jupyter notebook --no-browser --port=8888 --allow-root --NotebookApp.session_manager_class=nb2kg.managers.SessionManager --NotebookApp.kernel_manager_class=nb2kg.managers.RemoteKernelManager --NotebookApp.kernel_spec_manager_class=nb2kg.managers.RemoteKernelSpecManager
+jupyter notebook --no-browser --port=8888 --allow-root --NotebookApp.session_manager_class=nb2kg.managers.SessionManager --NotebookApp.kernel_manager_class=nb2kg.managers.RemoteKernelManager --NotebookApp.kernel_spec_manager_class=nb2kg.managers.RemoteKernelSpecManager &
